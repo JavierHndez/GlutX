@@ -1,35 +1,19 @@
-# app.py - Backend FastAPI para GLUTENFROID (Arquitectura Híbrida)
-
-import os
-import warnings
-
-# Silenciamos ruidos antes de importar librerías
-os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
-os.environ["HF_HUB_VERBOSITY"] = "error"
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-warnings.filterwarnings("ignore")
+# app.py - Backend FastAPI optimizado y autónomo para GLUTENFROID
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
 
-from rules import evaluar_determinista
-from engine import inicializar_router, analizar_con_ia
-
-# Inicializamos la aplicación FastAPI
 app = FastAPI(
     title="GLUTENFROID API",
-    description="Backend de detección híbrida de gluten",
-    version="1.0.0"
+    description="Backend de detección rápida de gluten por reglas deterministas",
+    version="2.0.0"
 )
 
-# Cargamos el motor al arrancar el servidor en Render
-print("Cargando motor DLM en memoria para el servidor API...")
-router = inicializar_router()
-print("¡Motor listo y servidor preparado!")
+# Palabras clave y listas negras estrictas
+HARD_BLACKLIST = ["trigo", "cebada", "centeno", "malta", "triticale", "espelta", "kamut"]
+WARNING_KEYWORDS = ["trazas", "puede contener", "contacto", "fábrica", "trazas de"]
 
-# Modelo de datos de entrada esperado (Pydantic)
 class ProductoRequest(BaseModel):
     nombre: str
     ingredientes: List[str]
@@ -37,51 +21,59 @@ class ProductoRequest(BaseModel):
 @app.post("/analizar")
 def analizar_producto(producto: ProductoRequest):
     """
-    Endpoint principal para analizar un producto de forma híbrida.
+    Endpoint principal de análisis ultra-rápido por reglas.
     """
     try:
         nombre = producto.nombre
         ingredientes = producto.ingredientes
         
-        # 1. Capa Determinista Inteligente
-        estado_filtro, detalle = evaluar_determinista(ingredientes)
-        
-        if estado_filtro == "BLOCK":
-            return {
-                "producto": nombre,
-                "veredicto": "CON GLUTEN",
-                "nivel_alerta": "ROJO",
-                "metodo": f"Filtro Determinista [{detalle}]",
-                "confianza": 1.0
-            }
-        else:
-            # 2. Capa de IA (DLM) para PASS o REVIEW
-            veredicto_ia, conf = analizar_con_ia(router, nombre, ingredientes)
+        for ing in ingredientes:
+            lower_ing = ing.lower()
             
-            if estado_filtro == "REVIEW":
-                metodo = f"Revisión de zona gris: {detalle}"
-                if "trazas" in detalle.lower() or "advertencia" in detalle.lower():
-                    nivel_alerta = "AMARILLO"
-                    veredicto = "PRECAUCIÓN / TRAZAS"
-                else:
-                    nivel_alerta = "VERDE" if veredicto_ia == "Seguro" else "AMARILLO"
-                    veredicto = "SEGURO (Exención técnica)" if veredicto_ia == "Seguro" else "REVISAR"
-            else:
-                metodo = "Motor DLM (Laya)"
-                nivel_alerta = "VERDE" if veredicto_ia == "Seguro" else "AMARILLO"
-                veredicto = "SEGURO" if veredicto_ia == "Seguro" else "REVISAR"
-                
-            return {
-                "producto": nombre,
-                "veredicto": veredicto,
-                "nivel_alerta": nivel_alerta,
-                "metodo": metodo,
-                "confianza": round(float(conf), 4)
-            }
+            # 1. Comprobar advertencias de trazas (Amarillo)
+            for warn in WARNING_KEYWORDS:
+                if warn in lower_ing:
+                    return {
+                        "producto": nombre,
+                        "veredicto": "PRECAUCIÓN / TRAZAS",
+                        "nivel_alerta": "AMARILLO",
+                        "metodo": f"Advertencia de contaminación cruzada: '{ing}'",
+                        "confianza": 0.85
+                    }
+            
+            # 2. Comprobar cereales prohibidos (Rojo o Excepción Verde)
+            for cereal in HARD_BLACKLIST:
+                if cereal in lower_ing:
+                    # Excepciones técnicas seguras (ej. jarabe de glucosa o sin gluten certificado)
+                    if "sin gluten" in lower_ing or ("jarabe de glucosa" in lower_ing and "trigo sin especificar" not in lower_ing):
+                        return {
+                            "producto": nombre,
+                            "veredicto": "SEGURO (Exención técnica)",
+                            "nivel_alerta": "VERDE",
+                            "metodo": f"Contiene '{cereal}', pero cumple exención técnica apta.",
+                            "confianza": 0.95
+                        }
+                    else:
+                        return {
+                            "producto": nombre,
+                            "veredicto": "CON GLUTEN",
+                            "nivel_alerta": "ROJO",
+                            "metodo": f"Cereal prohibido directo: '{cereal}'",
+                            "confianza": 1.0
+                        }
+        
+        # Si pasa todo sin coincidencias
+        return {
+            "producto": nombre,
+            "veredicto": "SEGURO",
+            "nivel_alerta": "VERDE",
+            "metodo": "Filtro Determinista (Sin alérgenos detectados)",
+            "confianza": 1.0
+        }
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 def health_check():
-    return {"status": "online", "system": "GLUTENFROID Core Active"}
+    return {"status": "online", "system": "GLUTENFROID Core Active (Fast & Pure Rules)"}
