@@ -10,6 +10,14 @@ app = FastAPI(
     version="2.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permite peticiones desde cualquier origen (tu web móvil)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Palabras clave y listas negras estrictas
 HARD_BLACKLIST = ["trigo", "cebada", "centeno", "malta", "triticale", "espelta", "kamut"]
 WARNING_KEYWORDS = ["trazas", "puede contener", "contacto", "fábrica", "trazas de"]
