@@ -1,6 +1,7 @@
-# app.py - Backend FastAPI optimizado y autónomo para GLUTENFROID
+# app.py - Backend FastAPI optimizado, con CORS y autónomo para GLUTENFROID
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 
@@ -10,9 +11,10 @@ app = FastAPI(
     version="2.0.0"
 )
 
+# Configuración de CORS para permitir peticiones desde la PWA del móvil
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permite peticiones desde cualquier origen (tu web móvil)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
