@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GlutX Mobile</title>
+    <!-- Tailwind CSS para un diseño ultra moderno -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Configuración para que parezca una app nativa en iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between p-6">
+
+    <div class="w-full max-w-md mx-auto space-y-6">
+        <!-- Cabecera -->
+        <div class="text-center space-y-1">
+            <h1 class="text-2xl font-bold tracking-tight text-white">GlutX</h1>
+            <p class="text-xs text-slate-400">Escáner y validación de seguridad alimentaria</p>
+        </div>
+
+        <!-- Caja de Texto de Ingredientes -->
+        <div class="space-y-2">
+            <label for="ingredientes" class="text-sm font-medium text-slate-300">Pega o dicta los ingredientes:</label>
+            <textarea id="ingredientes" rows="5" 
+                class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="Ej: Harina de trigo, agua, sal, levadura..."></textarea>
+        </div>
+
+        <!-- Botón de Análisis -->
+        <button onclick="analizarIngredientes()" 
+            class="w-full py-4 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold text-white shadow-lg shadow-blue-900/40 active:scale-95 transition-all">
+            Analizar Producto
+        </button>
+
+        <!-- Tarjeta de Resultado Dinámica -->
+        <div id="resultado-card" class="hidden rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border">
+            <h2 id="res-titulo" class="text-xl font-black tracking-wide uppercase"></h2>
+            <p id="res-detalle" class="text-sm font-medium opacity-90"></p>
+        </div>
+    </div>
+
+    <footer class="text-center text-[10px] text-slate-600 py-4">
+        GLUTENFROID Core • 100% Local & Seguro
+    </footer>
+
+    <script>
+        const API_URL = "https://glutx.onrender.com/"; // <--- PEGA TU URL DE RENDER AQUÍ
+
+        async function analizarIngredientes() {
+            const texto = document.getElementById("ingredientes").value;
+            if (!texto.trim()) return;
+
+            // Convertimos el texto separado por comas en un array de ingredientes
+            const listaIngredientes = texto.split(/[,.\n]+/).map(i => i.trim()).filter(i => i.length > 0);
+
+            const card = document.getElementById("resultado-card");
+            const titulo = document.getElementById("res-titulo");
+            const detalle = document.getElementById("res-detalle");
+
+            titulo.innerText = "Analizando...";
+            detalle.innerText = "Comprobando reglas y trazas...";
+            card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-slate-900 border-slate-800 text-slate-300 block";
+
+            try {
+                const response = await fetch(`${API_URL}/analizar`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nombre: "Producto Supermercado", ingredientes: listaIngredientes })
+                });
+
+                const data = await response.json();
+
+                // Cambiamos colores según el nivel de alerta devuelto por tu backend
+                if (data.nivel_alerta === "ROJO") {
+                    card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-red-950 border-red-800 text-red-200 block shadow-red-950/50 animate-pulse";
+                    titulo.innerText = "🔴 CON GLUTEN";
+                } else if (data.nivel_alerta === "AMARILLO") {
+                    card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-amber-950 border-amber-800 text-amber-200 block shadow-amber-950/50";
+                    titulo.innerText = "🟡 PRECAUCIÓN / TRAZAS";
+                } else {
+                    card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-emerald-950 border-emerald-800 text-emerald-200 block shadow-emerald-950/50";
+                    titulo.innerText = "🟢 SEGURO";
+                }
+
+                detalle.innerText = `${data.metodo} (Confianza: ${(data.confianza * 100).toFixed(0)}%)`;
+
+            } catch (error) {
+                card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-rose-950 border-rose-800 text-rose-200 block";
+                titulo.innerText = "ERROR DE CONEXIÓN";
+                detalle.innerText = "No se pudo conectar con el servidor.";
+            }
+        }
+    </script>
+</body>
+</html>
