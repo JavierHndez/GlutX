@@ -44,53 +44,59 @@
         GLUTENFROID Core • 100% Local & Seguro
     </footer>
 
-    <script>
-        const API_URL = "https://glutx.onrender.com/"; // <--- PEGA TU URL DE RENDER AQUÍ
+   <script>
+    const API_URL = "AQUÍ_PEGAS_TU_URL_DE_RENDER"; // <--- Tu URL de Render sin barra al final
 
-        async function analizarIngredientes() {
-            const texto = document.getElementById("ingredientes").value;
-            if (!texto.trim()) return;
+    async function analizarIngredientes() {
+        const texto = document.getElementById("ingredientes").value;
+        if (!texto.trim()) return;
 
-            // Convertimos el texto separado por comas en un array de ingredientes
-            const listaIngredientes = texto.split(/[,.\n]+/).map(i => i.trim()).filter(i => i.length > 0);
+        // Limpieza robusta: divide por comas, puntos o saltos de línea y elimina espacios vacíos
+        const listaIngredientes = texto
+            .split(/[,.\n]+/)
+            .map(i => i.trim())
+            .filter(i => i.length > 0);
 
-            const card = document.getElementById("resultado-card");
-            const titulo = document.getElementById("res-titulo");
-            const detalle = document.getElementById("res-detalle");
+        const card = document.getElementById("resultado-card");
+        const titulo = document.getElementById("res-titulo");
+        const detalle = document.getElementById("res-detalle");
 
-            titulo.innerText = "Analizando...";
-            detalle.innerText = "Comprobando reglas y trazas...";
-            card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-slate-900 border-slate-800 text-slate-300 block";
+        titulo.innerText = "Analizando...";
+        detalle.innerText = "Comprobando reglas y trazas...";
+        card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-slate-900 border-slate-800 text-slate-300 block";
 
-            try {
-                const response = await fetch(`${API_URL}/analizar`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ nombre: "Producto Supermercado", ingredientes: listaIngredientes })
-                });
+        try {
+            const response = await fetch(`${API_URL}/analizar`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    nombre: "Producto Escaneado", 
+                    ingredientes: listaIngredientes 
+                })
+            });
 
-                const data = await response.json();
+            const data = await response.json();
 
-                // Cambiamos colores según el nivel de alerta devuelto por tu backend
-                if (data.nivel_alerta === "ROJO") {
-                    card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-red-950 border-red-800 text-red-200 block shadow-red-950/50 animate-pulse";
-                    titulo.innerText = "🔴 CON GLUTEN";
-                } else if (data.nivel_alerta === "AMARILLO") {
-                    card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-amber-950 border-amber-800 text-amber-200 block shadow-amber-950/50";
-                    titulo.innerText = "🟡 PRECAUCIÓN / TRAZAS";
-                } else {
-                    card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-emerald-950 border-emerald-800 text-emerald-200 block shadow-emerald-950/50";
-                    titulo.innerText = "🟢 SEGURO";
-                }
-
-                detalle.innerText = `${data.metodo} (Confianza: ${(data.confianza * 100).toFixed(0)}%)`;
-
-            } catch (error) {
-                card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-rose-950 border-rose-800 text-rose-200 block";
-                titulo.innerText = "ERROR DE CONEXIÓN";
-                detalle.innerText = "No se pudo conectar con el servidor.";
+            // Cambiamos colores y textos según el nivel de alerta devuelto por la API
+            if (data.nivel_alerta === "ROJO") {
+                card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-red-950 border-red-800 text-red-200 block shadow-red-950/50 animate-pulse";
+                titulo.innerText = "🔴 " + data.veredicto;
+            } else if (data.nivel_alerta === "AMARILLO") {
+                card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-amber-950 border-amber-800 text-amber-200 block shadow-amber-950/50";
+                titulo.innerText = "🟡 " + data.veredicto;
+            } else {
+                card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-emerald-950 border-emerald-800 text-emerald-200 block shadow-emerald-950/50";
+                titulo.innerText = "🟢 " + data.veredicto;
             }
+
+            detalle.innerText = data.metodo;
+
+        } catch (error) {
+            card.className = "rounded-2xl p-6 text-center shadow-xl transition-all space-y-2 border bg-rose-950 border-rose-800 text-rose-200 block";
+            titulo.innerText = "ERROR DE CONEXIÓN";
+            detalle.innerText = "No se pudo conectar con el servidor.";
         }
-    </script>
+    }
+</script>
 </body>
 </html>
